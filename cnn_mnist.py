@@ -30,30 +30,45 @@ def cnn_model_fn(features, labels, mode):
     # First Convolutional Layer; output shape = [batch_size, 28, 28, 32]
     # We will use 32 filters, 5x5 kernel size, 'same' padding, and relu
     ############################## YOUR CODE ##############################
-
+    conv1 = tf.layers.conv2d(
+	inputs=input_layer,
+	filters=32,
+	kernel_size=[5,5],
+	padding="same",
+	activation=tf.nn.relu
+    )
 
     # First Pooling Layer; output shape = [batch_size, 14, 14, 32]
     # 2x2 pool size with strides of 2
     ############################## YOUR CODE ##############################
-
+    pool1 = tf.layers.max_pooling2d(inputs=conv1, pool_size=[2,2], strides=2) 
 
     # Second Conv & Pooling Layers; output shape = [batch_size, 7, 7, 64]
     # 64 filters this time!
     ############################## YOUR CODE ##############################
-
+    conv2 = tf.layers.conv2d(
+	inputs=pool1,
+	filters=64,
+	kernel_size=[5,5],
+	padding="same",
+	activation=tf.nn.relu
+    )
 
     # max_pooling reduces our `image` width and height by 50%
     # 2x2 pool with strides of 2
     ############################## YOUR CODE ##############################
-
+    pool2 = tf.layers.max_pooling2d(inputs=conv2, pool_size=[2,2], strides=2)
 
     # Flatten pool2 for input to dense layer; out_shape=[batch_size, 3136]
-    pool2_flat = tf.reshape(pool2, [-1, 7 * 7 * 64])  # reshape to be flat (2D)
+    pool2_flat = tf.reshape(pool2, [-1, 7*7*64])  # reshape to be flat (2D)
 
     # Performs the actual classification of the abstracted features from conv1/2
     # 512 nodes for this dense layer; ReLU activation
     ############################## YOUR CODE ##############################
-
+    dense = tf.layers.dense(
+		inputs=pool2_flat,
+		units=512,
+		activation=tf.nn.relu)
 
     # Dropout creates a chance that input is ignored during training. This will
     # decrease the chances of over-fitting the training data
@@ -102,7 +117,10 @@ def cnn_model_fn(features, labels, mode):
     concerned with the prediction accuracy for the target value."""
     # loss function here -- sparse-cross-entropy!
     ############################## YOUR CODE ##############################
-
+    loss = tf.losses.sparse_softmax_cross_entropy(
+	 labels=labels,
+	 logits=logits
+     )
 
     # Configure the training operation if TRAIN mode
     if mode == tf.estimator.ModeKeys.TRAIN:
@@ -110,7 +128,7 @@ def cnn_model_fn(features, labels, mode):
         # the optimum. Higher rates may learn faster but may overshoot the opt
         # Let's use a Gradient Descent Optimizer -- learning_rate of 0.06
         ############################## YOUR CODE ##############################
-
+        optimizer = tf.train.GradientDescentOptimizer(learning_rate=0.06)
 
         # Use our Grad Descent optimizer to minimize the loss we calculated!
         train_op = optimizer.minimize(
@@ -150,7 +168,10 @@ def main(unused_argv):
 
     # Create the actual Estimator to run our model
     ############################## YOUR CODE ##############################
-
+    mnist_classifier = tf.estimator.Estimator(
+		model_fn = cnn_model_fn,
+		model_dir="./mnist_convnet_model_fast4" #model data 	
+	)
 
     # Setup logging here
     tensors_to_log = {"probabilities": "softmax_tensor"} # prob from earlier
@@ -169,7 +190,11 @@ def main(unused_argv):
     
     # Add the code to train the mnist_classifier over 500 steps!
     ############################## YOUR CODE ##############################
-
+    mnist_classifier.train(
+	input_fn = train_input_fn,
+	steps = 500,
+	hooks = [logging_hook]
+    )
 
     # Evaluate the model and print results!
     # Build the evaluate_input_function for giving the classifier our data
